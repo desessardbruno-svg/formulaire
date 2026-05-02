@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inscription Famille</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    :root {
+      --blue: #1f3c88;
+      --blue-dark: #162d66;
+      --green: #2d9c5b;
+      --red: #c0392b;
+      --bg: #f3f6fb;
+      --card: #ffffff;
+      --text: #182033;
+      --muted: #667085;
+      --border: #dbe3f0;
+      --shadow: 0 18px 45px rgba(31, 60, 136, 0.14);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(31, 60, 136, 0.18), transparent 32rem),
+        linear-gradient(180deg, #f7faff 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(100%, 980px);
+      margin: 0 auto;
+      padding: 22px 14px 40px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, var(--blue), #3866c2);
+      color: white;
+      border-radius: 0 0 28px 28px;
+      padding: 26px 18px 72px;
+      margin: -22px -14px 0;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 8vw, 48px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 12px auto 0;
+      max-width: 560px;
+      color: rgba(255,255,255,0.88);
+      line-height: 1.5;
+      font-size: 15px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 18px;
+      align-items: start;
+      margin-top: -48px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(219, 227, 240, 0.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .form-card { padding: 20px; }
+
+    .qr-card {
+      padding: 18px;
+      position: sticky;
+      top: 14px;
+      text-align: center;
+    }
+
+    .qr-title {
+      margin: 0 0 8px;
+      font-size: 18px;
+      color: var(--blue);
+    }
+
+    .qr-help {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .qr-box {
+      background: #f8fbff;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .qr-box img, .qr-box canvas {
+      display: block;
+      width: 210px;
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+      image-rendering: pixelated;
+    }
+
+    .qr-url {
+      word-break: break-all;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+      margin-top: 10px;
+    }
+
+    .section {
+      margin-bottom: 22px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 14px;
+      color: var(--blue);
+      font-size: 18px;
+    }
+
+    .section-title span {
+      display: inline-flex;
+      width: 30px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: #eef5ff;
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field { min-width: 0; }
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      margin: 0 0 7px;
+      font-weight: 800;
+      font-size: 13px;
+      color: #24324a;
+    }
+
+    .required::after {
+      content: " *";
+      color: var(--red);
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 14px;
+      font-size: 16px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+
+    textarea { resize: vertical; min-height: 96px; }
+
+    input:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(31, 60, 136, 0.12);
+      background: #fbfdff;
+    }
+
+    .child-card {
+      background: #f8fbff;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .child-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: var(--blue);
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .child-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 150px;
+      gap: 10px;
+    }
+
+    .hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    button, .btn {
+      appearance: none;
+      border: none;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+      font-size: 15px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:active, .btn:active { transform: translateY(1px); }
+
+    .btn-primary {
+      background: var(--blue);
+      color: white;
+      box-shadow: 0 8px 18px rgba(31, 60, 136, 0.24);
+    }
+
+    .btn-primary:hover { background: var(--blue-dark); }
+
+    .btn-green { background: var(--green); color: white; }
+    .btn-light { background: #eef5ff; color: var(--blue); }
+    .btn-red { background: #fdeceb; color: var(--red); padding: 9px 11px; font-size: 13px; }
+
+    .submit-row {
+      position: sticky;
+      bottom: 0;
+      margin: 18px -20px -20px;
+      padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+      background: rgba(255,255,255,0.92);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+
+    .submit-row .btn-primary {
+      width: 100%;
+      min-height: 54px;
+      font-size: 17px;
+    }
+
+    .message {
+      display: none;
+      margin-top: 14px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .message.show { display: block; }
+    .message.success { background: #e8f7ed; color: #1d7a3d; border: 1px solid #b8e0c3; }
+    .message.error { background: #fdeceb; color: #b03a2e; border: 1px solid #f1b8b2; }
+    .message.info { background: #eef5ff; color: var(--blue); border: 1px solid #c8daf8; }
+
+    .print-only-title { display: none; }
+
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .qr-card { position: static; order: -1; }
+      .qr-box img, .qr-box canvas { width: 180px !important; height: 180px !important; }
+    }
+
+    @media (max-width: 640px) {
+      .page { padding-left: 10px; padding-right: 10px; }
+      .hero { margin-left: -10px; margin-right: -10px; padding-bottom: 66px; }
+      .form-card { padding: 16px; border-radius: 20px; }
+      .grid, .child-grid { grid-template-columns: 1fr; }
+      .actions button, .actions .btn { width: 100%; }
+      .submit-row { margin-left: -16px; margin-right: -16px; margin-bottom: -16px; padding-left: 16px; padding-right: 16px; }
+    }
+
+    @media print {
+      body { background: white; }
+      .page { width: 100%; padding: 0; }
+      .hero, .form-card { display: none !important; }
+      .layout { display: block; margin: 0; }
+      .qr-card {
+        display: block;
+        position: static;
+        box-shadow: none;
+        border: none;
+        padding: 18mm 14mm;
+      }
+      .qr-title { font-size: 28px; color: #000; }
+      .qr-help { font-size: 16px; color: #333; }
+      .qr-box { border: none; background: white; }
+      .qr-box img, .qr-box canvas { width: 95mm !important; height: 95mm !important; }
+      .qr-url { font-size: 10px; color: #333; }
+      .qr-card .actions { display: none; }
+      .print-only-title { display: block; margin: 0 0 8mm; font-size: 34px; font-weight: 900; color: #000; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="hero-badge">📋 Formulaire d'inscription</div>
+      <h1>Inscription famille</h1>
+      <p>Remplissez les informations ci-dessous. Les champs avec une étoile sont obligatoires.</p>
+    </header>
+
+    <div class="layout">
+      <form class="card form-card" id="inscriptionForm" novalidate>
+        <section class="section">
+          <h2 class="section-title"><span>👨‍👩‍👧</span> Famille</h2>
+          <div class="grid">
+            <div class="field">
+              <label class="required" for="nom_famille">Nom de famille</label>
+              <input id="nom_famille" autocomplete="family-name" required />
+            </div>
+            <div class="field">
+              <label class="required" for="prenom_responsable">Prénom responsable</label>
+              <input id="prenom_responsable" autocomplete="given-name" required />
+            </div>
+            <div class="field">
+              <label for="telephone">Téléphone</label>
+              <input id="telephone" type="tel" inputmode="tel" autocomplete="tel" />
+            </div>
+            <div class="field">
+              <label for="mail">Mail</label>
+              <input id="mail" type="email" inputmode="email" autocomplete="email" />
+            </div>
+            <div class="field full">
+              <label for="adresse">Adresse de vacances</label>
+              <textarea id="adresse" autocomplete="street-address"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title"><span>🧒</span> Enfants</h2>
+          <div id="childrenList"></div>
+          <button class="btn-light" type="button" onclick="ajouterEnfant()">+ Ajouter un enfant</button>
+          <p class="hint">Ajoutez au moins un enfant. Exemple : Dupont / Lucas / 2015.</p>
+        </section>
+
+        <div id="message" class="message"></div>
+
+        <div class="submit-row">
+          <button id="submitBtn" class="btn-primary" type="submit">Envoyer l'inscription</button>
+        </div>
+      </form>
+
+      <aside class="card qr-card" id="qrCard">
+        <div class="print-only-title">Inscription famille</div>
+        <h2 class="qr-title">QR code prêt à afficher</h2>
+        <p class="qr-help">À imprimer ou à montrer sur un écran. Il renvoie vers cette page de formulaire.</p>
+        <div class="qr-box">
+          <canvas id="qrCanvas" aria-label="QR code du formulaire d'inscription"></canvas>
+          <img id="qrImage" alt="QR code du formulaire d'inscription" style="display:none" />
+          <div id="qrUrl" class="qr-url"></div>
+        </div>
+        <div class="actions">
+          <button class="btn-light" type="button" onclick="actualiserQr()">Actualiser</button>
+          <button class="btn-green" type="button" onclick="window.print()">Imprimer</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://bcjshwpiwhcubwmcwbly.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_8LueuxrNd1FTbgz-WiQyxQ_GywUpsKP";
+
+    // IMPORTANT : mettez ici l'adresse publique du formulaire après l'avoir mis en ligne.
+    // Exemple : const FORMULAIRE_PUBLIC_URL = "https://votre-site.fr/formulaire.html";
+    // Si vous laissez vide, le QR code prendra l'adresse de la page ouverte.
+    // Attention : si la page est ouverte en fichier local (file:///...), un téléphone ne pourra pas y accéder.
+    const FORMULAIRE_PUBLIC_URL = "";
+
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const childrenList = document.getElementById("childrenList");
+    const messageBox = document.getElementById("message");
+    const submitBtn = document.getElementById("submitBtn");
+
+    function afficherMessage(type, texte) {
+      messageBox.className = "message show " + type;
+      messageBox.textContent = texte;
+    }
+
+    function ajouterEnfant(valeurs = {}) {
+      const index = childrenList.children.length + 1;
+      const card = document.createElement("div");
+      card.className = "child-card";
+      card.innerHTML = `
+        <div class="child-header">
+          <span>Enfant ${index}</span>
+          <button class="btn-red" type="button" onclick="supprimerEnfant(this)">Supprimer</button>
+        </div>
+        <div class="child-grid">
+          <div class="field">
+            <label class="required">Nom</label>
+            <input class="child-nom" value="${valeurs.nom || ""}" autocomplete="family-name" required />
+          </div>
+          <div class="field">
+            <label class="required">Prénom</label>
+            <input class="child-prenom" value="${valeurs.prenom || ""}" autocomplete="given-name" required />
+          </div>
+          <div class="field">
+            <label class="required">Année de naissance</label>
+            <input class="child-annee" type="number" inputmode="numeric" min="2000" max="2035" value="${valeurs.annee_naissance || ""}" required />
+          </div>
+        </div>
+      `;
+      childrenList.appendChild(card);
+      renumeroterEnfants();
+    }
+
+    function supprimerEnfant(button) {
+      if (childrenList.children.length <= 1) {
+        afficherMessage("error", "Il faut garder au moins un enfant dans l'inscription.");
+        return;
+      }
+      button.closest(".child-card").remove();
+      renumeroterEnfants();
+    }
+
+    function renumeroterEnfants() {
+      [...childrenList.children].forEach((card, i) => {
+        card.querySelector(".child-header span").textContent = `Enfant ${i + 1}`;
+      });
+    }
+
+    function collecterEnfants() {
+      return [...childrenList.children]
+        .map(card => ({
+          nom: card.querySelector(".child-nom").value.trim(),
+          prenom: card.querySelector(".child-prenom").value.trim(),
+          annee_naissance: parseInt(card.querySelector(".child-annee").value.trim(), 10)
+        }))
+        .filter(e => e.nom && e.prenom && e.annee_naissance);
+    }
+
+    async function envoyer() {
+      const enfants = collecterEnfants();
+      const data = {
+        nom_famille: document.getElementById("nom_famille").value.trim(),
+        prenom_responsable: document.getElementById("prenom_responsable").value.trim(),
+        telephone: document.getElementById("telephone").value.trim(),
+        mail: document.getElementById("mail").value.trim(),
+        adresse_vacances: document.getElementById("adresse").value.trim(),
+        enfants: enfants,
+        statut: "nouveau"
+      };
+
+      if (!data.nom_famille || !data.prenom_responsable || enfants.length === 0) {
+        afficherMessage("error", "Merci de remplir le nom, le prénom responsable et au moins un enfant complet.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Envoi en cours...";
+      afficherMessage("info", "Envoi de l'inscription...");
+
+      const { error } = await client
+        .from("inscriptions_familles")
+        .insert([data]);
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Envoyer l'inscription";
+
+      if (error) {
+        afficherMessage("error", "Erreur : " + error.message);
+      } else {
+        document.getElementById("inscriptionForm").reset();
+        childrenList.innerHTML = "";
+        ajouterEnfant();
+        afficherMessage("success", "Inscription envoyée avec succès.");
+      }
+    }
+
+    function getFormUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const urlParam = params.get("url");
+      const url = (urlParam || FORMULAIRE_PUBLIC_URL || window.location.href.split("#")[0]).trim();
+      return url;
+    }
+
+    async function actualiserQr() {
+      const url = getFormUrl();
+      const canvas = document.getElementById("qrCanvas");
+      const image = document.getElementById("qrImage");
+      const label = document.getElementById("qrUrl");
+
+      label.innerHTML = "";
+      const lien = document.createElement("a");
+      lien.href = url;
+      lien.textContent = url;
+      lien.target = "_blank";
+      lien.rel = "noopener";
+      label.appendChild(lien);
+
+      if (url.startsWith("file:")) {
+        const avertissement = document.createElement("div");
+        avertissement.style.marginTop = "8px";
+        avertissement.style.color = "#c0392b";
+        avertissement.style.fontWeight = "800";
+        avertissement.textContent = "Attention : ce QR pointe vers un fichier local. Mettez le formulaire en ligne puis renseignez FORMULAIRE_PUBLIC_URL dans le code.";
+        label.appendChild(avertissement);
+      }
+
+      try {
+        if (!window.QRCode) throw new Error("Librairie QR non chargée");
+        await QRCode.toCanvas(canvas, url, {
+          width: 700,
+          margin: 2,
+          errorCorrectionLevel: "M"
+        });
+        canvas.style.display = "block";
+        image.style.display = "none";
+      } catch (e) {
+        // Secours si la librairie QR est bloquée : génération via service externe.
+        image.src = "https://api.qrserver.com/v1/create-qr-code/?size=700x700&margin=18&data=" + encodeURIComponent(url);
+        image.style.display = "block";
+        canvas.style.display = "none";
+      }
+    }
+
+    document.getElementById("inscriptionForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      envoyer();
+    });
+
+    ajouterEnfant();
+    actualiserQr();
+  </script>
+</body>
+</html>
